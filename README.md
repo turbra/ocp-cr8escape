@@ -16,6 +16,7 @@ A flaw was found in CRI-O in the way it set kernel options for a pod. This issue
 - ### [Red Hat OpenShift - CVE-2022-0811](https://access.redhat.com/security/cve/cve-2022-0811)
 
 ## External References
+- ### [CrowdStrike](https://www.crowdstrike.com/blog/cr8escape-new-vulnerability-discovered-in-cri-o-container-engine-cve-2022-0811/)
 - ### [GitHub cri-o](https://github.com/cri-o/cri-o/security/advisories/GHSA-6x2m-w449-qwx7)
 
 # Overview
