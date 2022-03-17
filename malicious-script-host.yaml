@@ -4,6 +4,6 @@ metadata:
   name: malicious-script-host
 spec:
   containers:
-  - name: alpine
-    image: alpine:latest
+  - name: ubi8
+    image: registry.access.redhat.com/ubi8/ubi:8.5-236
     command: ["tail", "-f", "/dev/null"]
