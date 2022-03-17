@@ -110,9 +110,7 @@ PID   USER     TIME  COMMAND
 ```
 kill -SIGSEGV 42`
 ```
-```/ #
-[1]+  Segmentation fault (core dumped) tail -f /dev/null
-```
+`[1]+  Segmentation fault (core dumped) tail -f /dev/null`
 # Verify Malicious Script Ran :boom: :beer:
 
 ```
